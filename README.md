@@ -21,13 +21,13 @@
 ## Table of Contents
 
 - [Overview](#-overview)
+- [Screenshots](#-screenshots)
 - [Architecture](#-architecture)
 - [Model Details](#-model-details)
 - [Feature Engineering](#-feature-engineering)
 - [Performance Benchmarks](#-performance-benchmarks)
 - [Quick Start](#-quick-start)
 - [Data Format](#-data-format)
-- [UI Walkthrough](#️-ui-walkthrough)
 - [Technical Decisions](#-technical-decisions)
 - [Changelog](#-changelog)
 - [Limitations & Future Work](#️-limitations--future-work)
@@ -40,6 +40,8 @@ This project implements a **production-quality, dual-model forecasting system** 
 
 Most open-source energy forecasters pick one model and call it done. This one trains both **XGBoost** (gradient-boosted trees, fast, interpretable) and **LSTM** (deep recurrent network, sequence-aware) on identical data splits, then surfaces a head-to-head comparison of RMSE, MAE, and MAPE — letting the data decide which model wins on your specific market window.
 
+**Dataset used:** Austrian day-ahead clearing data, 2020–2026 · **53,190 hourly records** · Avg price **€114.3/MWh**
+
 **Why both models?**
 
 | Scenario | Better Model |
@@ -47,6 +49,49 @@ Most open-source energy forecasters pick one model and call it done. This one tr
 | Short-term horizon (1–2 days), stable seasonality | XGBoost |
 | Longer horizon, complex sequential dependencies | LSTM |
 | Novel price spikes or regime changes | Neither — but LSTM degrades more gracefully |
+
+---
+
+## 🖼 Screenshots
+
+### Dashboard UI — Data Loading & Settings
+
+> Load any `.xlsx` or `.csv`, set your training window, select forecast horizon (1–7 days), and choose which model(s) to run.
+
+![Price Forecaster UI](Priceforecaster_.png)
+
+---
+
+### Forecast Chart — Historical + XGBoost + LSTM
+
+> Interactive Plotly chart overlaying historical prices with both model forecasts. XGBoost (green dashed) and LSTM (orange dashed) track together closely over the 7-day horizon, with XGBoost showing slightly tighter range capture on peak hours.
+
+![Forecast Chart](Forecast_chart.png)
+
+---
+
+### Model Performance & Daily Summary
+
+> Side-by-side accuracy metrics with automatic winner detection. The daily summary table highlights the **intraday price spread** (high − low) per day using a heatmap — darker red = larger arbitrage opportunity.
+
+![Model Performance and Daily Summary](Model_Performance_and_Summary.png)
+
+**Live run results (Jan 27 – Feb 2, 2026, Austrian market):**
+
+| Model | RMSE | MAE | MAPE |
+|---|---|---|---|
+| **XGBoost** | €13.27 | €7.67 | **5.7%** ✅ |
+| LSTM | €16.00 | €11.36 | 9.9% |
+
+> XGBoost wins by **4.2% MAPE** on this window. Daily spreads ranged from €65.84 (Sun) to €108.44 (Mon), highlighting strong weekday/weekend divergence.
+
+---
+
+### Model Difference Heatmap — XGBoost vs LSTM (€/MWh)
+
+> Visualises where the two models diverge most. Blue = XGBoost predicts higher. Red = LSTM predicts higher. The largest disagreements appear in **morning ramp hours (08:00–11:00)** and **evening peak (17:00–19:00)** — hours with the most volatile demand transitions.
+
+![Model Difference Heatmap](Model_Difference_Heatmap.png)
 
 ---
 
@@ -76,7 +121,7 @@ Most open-source energy forecasters pick one model and call it done. This one tr
 │                    ┌─────────▼─────────────────────────────▼──────────┐ │
 │                    │    Evaluation & Comparison Layer                  │ │
 │                    │    RMSE  │  MAE  │  MAPE  │  Plotly Charts       │ │
-│                    └─────────────────────────────────────────────────-┘ │
+│                    └──────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -173,29 +218,41 @@ XGBoost feature set (12 features total):
 ```
 
 **Why cyclical encoding?**  
-A raw `hour` feature treats 23 and 0 as far apart (distance = 23). After sin/cos encoding, they are adjacent on the unit circle — which better reflects the continuous nature of the daily price cycle.
+A raw `hour` feature treats 23 and 0 as 23 units apart — but they're actually adjacent. Projecting onto a unit circle (sin + cos) preserves this topology and improves model performance on intraday patterns.
 
 ---
 
 ## 📊 Performance Benchmarks
 
-*Benchmarks computed on a held-out 15% test slice (time-based, no shuffle) of 2020–2024 Austrian day-ahead clearing data (~43,800 hourly records).*
+*Computed on a held-out 15% test slice (time-based, no shuffle). Numbers from a live run on Austrian day-ahead data, Jan 27 – Feb 2, 2026.*
 
 | Metric | XGBoost | LSTM | Lower is better |
 |---|---|---|---|
-| **RMSE** (€/MWh) | ~8–12 | ~9–14 | ↓ |
-| **MAE** (€/MWh) | ~5–9 | ~6–10 | ↓ |
-| **MAPE** (%) | ~10–15% | ~12–18% | ↓ |
+| **RMSE** (€/MWh) | **€13.27** | €16.00 | ↓ |
+| **MAE** (€/MWh) | **€7.67** | €11.36 | ↓ |
+| **MAPE** (%) | **5.7%** | 9.9% | ↓ |
 
-> Ranges reflect variability across different training window selections (2020–2021 data behaves very differently from 2021–2022 during the energy crisis). Exact numbers depend on your chosen date range in the UI.
+**Key finding:** XGBoost outperforms LSTM by **4.2% MAPE** on this dataset. The likely reason is that energy price drivers are primarily **feature-based** (hour of day, day of week, recent lags) rather than **long-sequence-based** — which plays to XGBoost's strengths. LSTM's advantage materializes on datasets with longer-range temporal dependencies where tabular features alone are insufficient.
 
-**Key finding:** XGBoost consistently outperforms LSTM on this dataset. The likely reason is that energy price drivers are primarily **feature-based** (hour of day, day of week, recent lag) rather than **long-sequence-based** — which plays to XGBoost's strengths. LSTM's advantage materializes on datasets with longer-range temporal dependencies.
+**Observed intraday patterns (Jan 27 – Feb 2, 2026):**
+
+| Date | Low Hour | Low Price | High Hour | High Price | Spread |
+|---|---|---|---|---|---|
+| Tue 27 Jan | 03:00 | €111.03 | 17:00 | €210.42 | €99.39 |
+| Wed 28 Jan | 04:00 | €109.01 | 16:00 | €207.68 | €98.67 |
+| Thu 29 Jan | 04:00 | €115.54 | 16:00 | €211.52 | €95.97 |
+| Fri 30 Jan | 03:00 | €122.60 | 16:00 | €208.27 | €85.68 |
+| Sat 31 Jan | 03:00 | €118.17 | 16:00 | €191.88 | €73.71 |
+| Sun 01 Feb | 03:00 | €113.55 | 17:00 | €179.39 | €65.84 |
+| Mon 02 Feb | 00:00 | €115.69 | 18:00 | €224.13 | **€108.44** |
+
+> Monday shows the largest spread (€108.44) — consistent with industrial demand ramping up after the weekend. Sunday shows the smallest (€65.84).
 
 ---
 
 ## 🚀 Quick Start
 
-### 1 — Clone / download
+### 1 — Clone
 
 ```bash
 git clone https://github.com/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria.git
@@ -203,12 +260,6 @@ cd ML_Dayahead_XGBoost_energy_price_forecaster_Austria
 ```
 
 ### 2 — Install dependencies
-
-```bash
-pip install xgboost pandas numpy plotly ipywidgets scikit-learn tensorflow openpyxl
-```
-
-Or with a lockfile:
 
 ```bash
 pip install xgboost>=2.0 pandas>=1.5 numpy>=1.23 plotly>=5.0 \
@@ -221,23 +272,21 @@ pip install xgboost>=2.0 pandas>=1.5 numpy>=1.23 plotly>=5.0 \
 jupyter notebook "Price_Forecaster_ML_and_XG_boost.ipynb"
 ```
 
-Then: **Kernel → Restart & Run All**
+**Kernel → Restart & Run All**, then use the UI.
 
 ### 4 — (Optional) Set a default data path
-
-Edit the top of the notebook:
 
 ```python
 DEFAULT_PATH = r"path/to/your/Merged_Hourly_DayAhead_2020_2025.xlsx"
 ```
 
-You can also paste the path directly into the **File Path** text box in the UI at runtime — no code edit required.
+You can also paste the path into the **File Path** text box at runtime — no code edit required.
 
 ---
 
 ## 📂 Data Format
 
-The notebook auto-detects column names. It looks for any column whose name contains `time`, `date`, or `timestamp` for the index, and any column containing `price`, `eur`, or `mwh` for the target.
+The notebook auto-detects column names. It looks for any column containing `time`, `date`, or `timestamp` for the index, and any column containing `price`, `eur`, or `mwh` for the target.
 
 **Canonical format (Austrian EXAA/EPEX data):**
 
@@ -256,79 +305,40 @@ The notebook auto-detects column names. It looks for any column whose name conta
 5. Linear interpolation for gaps ≤ 3 hours
 6. Drop remaining NaNs
 
-**Minimum data requirement:** ≥ 500 records (~3 weeks). Recommended: ≥ 8,760 records (1 full year) for reliable seasonality capture.
-
----
-
-## 🖥️ UI Walkthrough
-
-```
-┌────────────────────────────────────────────────────────────────────┐
-│ ⚡ Price Forecaster                                                │
-│    XGBoost + LSTM • Model Comparison                               │
-├────────────────────────────────────────────────────────────────────┤
-│                                                                    │
-│  📂 Path: [ E:\...\Merged_Hourly_DayAhead_2020_2025.xlsx ] [Load] │
-│                                                                    │
-│  ✅ 43,824 records  |  2020-01-01 → 2024-12-31  |  Avg €72.4/MWh  │
-│                                                                    │
-├────────────────────────────────────────────────────────────────────┤
-│  From: [ 2024-01-01 ]   To: [ 2024-12-31 ]                        │
-│  Horizon:  |──────●────────|  3 days                              │
-│  Model:    ● Both (Compare)  ○ XGBoost Only  ○ LSTM Only          │
-│                                                                    │
-│                       [ ▶  Run Forecast ]                          │
-├────────────────────────────────────────────────────────────────────┤
-│  ████████████████████████████████████████  100%  Training done    │
-│                                                                    │
-│  ┌───────────────────┐  ┌───────────────────┐                     │
-│  │ XGBoost           │  │ LSTM              │                     │
-│  │ RMSE  €8.42       │  │ RMSE  €9.17       │                     │
-│  │ MAE   €5.91       │  │ MAE   €6.44       │                     │
-│  │ MAPE  11.2%       │  │ MAPE  12.8%       │                     │
-│  └───────────────────┘  └───────────────────┘                     │
-│                                                                    │
-│  [Plotly interactive forecast chart]                               │
-│                                                                    │
-│  date        hour_low  price_low  hour_high  price_high           │
-│  2025-05-16     03      €38.2        19        €112.4             │
-│  2025-05-17     04      €41.7        20        €108.9             │
-│  2025-05-18     03      €36.5        18        €119.2             │
-│                                                                    │
-│                              [ ⬇ Export CSV ]                     │
-└────────────────────────────────────────────────────────────────────┘
-```
+**Minimum:** ≥ 500 records (~3 weeks). Recommended: ≥ 8,760 records (1 full year) for reliable seasonality capture.
 
 ---
 
 ## ⚙️ Technical Decisions
 
 **Why `shuffle=False` in LSTM training?**  
-Shuffling training batches is standard for i.i.d. data, but time series observations are temporally dependent. Shuffling would allow the model to "see the future" during training — a form of data leakage that inflates validation metrics. Setting `shuffle=False` ensures every training step only has access to observations prior to the validation window.
+Shuffling is standard for i.i.d. data, but time series observations are temporally dependent. Shuffling would allow the model to "see the future" during training — a form of data leakage that inflates validation metrics. `shuffle=False` ensures every training step only accesses observations prior to the validation window.
 
 **Why 85/15 time-based split instead of random split?**  
-Same reason: the test set must come strictly after the training set in time, or the model implicitly leaks future information through lagged features.
+The test set must come strictly after the training set in time, or the model implicitly leaks future information through lagged features. A random split would make validation metrics meaningless for forecasting.
 
 **Why `lag_168` (1 week lookback) alongside shorter lags?**  
-Electricity markets exhibit strong **weekly seasonality** — Monday morning prices in winter are highly correlated with the same hour 7 days prior. Without this feature, the model would only capture daily and sub-daily cycles, missing the workweek/weekend structure.
+Electricity markets exhibit strong **weekly seasonality** — Monday morning prices are highly correlated with the same hour 7 days prior. Without this feature, the model only captures daily and sub-daily cycles, missing the workweek/weekend structure visible in the daily summary above.
 
 **Why cyclical sin/cos encoding for `hour` and `dow`?**  
-Integer encoding (hour = 0..23) implies that hour 0 and hour 23 are 23 units apart — but they're actually adjacent. Projecting onto a unit circle (sin + cos) preserves this topology and improves model performance on intraday patterns.
+Integer encoding implies that hour 0 and hour 23 are 23 units apart — but they're adjacent. Projecting onto a unit circle (sin + cos) preserves this topology and improves performance on intraday patterns.
 
 **Why 168-step window for LSTM?**  
-One full week of hourly data (7 × 24 = 168 timesteps). This ensures the LSTM can capture both daily and weekly cycles in a single input sequence — the minimum window that contains a complete periodic structure for electricity markets.
+One full week of hourly data (7 × 24 = 168 timesteps) ensures the LSTM can capture both daily and weekly cycles in a single input sequence — the minimum window containing a complete periodic structure for electricity markets.
 
 ---
 
 ## 📋 Changelog
 
 ### v2.0 — May 2025
-- Added **LSTM model** with time-encoded input features
-- Added **model comparison UI** (side-by-side RMSE / MAE / MAPE)
+- Added **LSTM model** with time-encoded input features (sin/cos hour, sin dow)
+- Added **Model Difference Heatmap** — visual divergence analysis by hour and day
+- Added **model comparison UI** (side-by-side RMSE / MAE / MAPE with auto winner detection)
 - Fixed data leakage: `shuffle=False` enforced across both models
 - Extended XGBoost feature set: `lag_3`, `month`, `hour_sin`, `hour_cos`, `roll_168` added
 - Learning rate tuned: `0.1 → 0.05` for more stable convergence
-- Added `EarlyStopping` with `restore_best_weights=True` to LSTM training
+- Added `EarlyStopping(patience=5, restore_best_weights=True)` to LSTM training
+- Daily summary table now includes **intraday spread** with heatmap colouring
 
 ### v1.0 — 2024
 - Initial release: XGBoost-only forecaster
@@ -351,12 +361,12 @@ One full week of hourly data (7 × 24 = 168 timesteps). This ensures the LSTM ca
 
 **Planned improvements:**
 
-- [ ] Feature importance visualisation (SHAP values for XGBoost)
+- [ ] SHAP feature importance visualisation for XGBoost
 - [ ] Probabilistic forecasting — prediction intervals via quantile regression
 - [ ] Exogenous inputs: temperature, hydro reservoir levels, wind/solar generation
 - [ ] Model persistence: `xgb.save_model()` + `model.save()` so retraining is optional
-- [ ] Backtesting harness: rolling-window evaluation across multiple time periods
-- [ ] Export to ONNX for deployment outside Jupyter
+- [ ] Rolling-window backtesting harness across multiple time periods
+- [ ] ONNX export for deployment outside Jupyter
 
 ---
 
@@ -373,7 +383,7 @@ One full week of hourly data (7 × 24 = 168 timesteps). This ensures the LSTM ca
 | `ipywidgets` | ≥ 7.6 | Jupyter UI (sliders, date pickers, buttons) |
 | `openpyxl` | ≥ 3.0 | Reading `.xlsx` files |
 
-> `ipywidgets` requires **Jupyter Notebook** or **JupyterLab**. Widgets do not render in static GitHub previews or VS Code's notebook renderer without the widget extension.
+> `ipywidgets` requires **Jupyter Notebook** or **JupyterLab**. Widgets do not render in static GitHub previews without the widget extension.
 
 ---
 
@@ -387,6 +397,11 @@ One full week of hourly data (7 × 24 = 168 timesteps). This ensures the LSTM ca
 │
 ├── 📊 Merged_Hourly_DayAhead_2020_2025.xlsx     ← Sample dataset (Austrian EXAA)
 │
+├── 🖼 Priceforecaster_.png
+├── 🖼 Forecast_chart.png
+├── 🖼 Model_Performance_and_Summary.png
+├── 🖼 Model_Difference_Heatmap.png
+│
 ├── 📄 README.md
 └── 📄 LICENSE
 ```
@@ -397,7 +412,7 @@ One full week of hourly data (7 × 24 = 168 timesteps). This ensures the LSTM ca
 
 Pull requests are welcome. For significant changes, please open an issue first to discuss the approach.
 
-If you're running this on a different European market (DE, FR, NL, etc.) and need column-name adjustments, open an issue with a sample of your data format.
+Running this on a different European market (DE, FR, NL, etc.) and need column-name adjustments? Open an issue with a sample of your data format.
 
 ---
 
