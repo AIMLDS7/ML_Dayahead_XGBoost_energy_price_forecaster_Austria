@@ -2,19 +2,39 @@
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f0c29,50:302b63,100:24243e&height=200&section=header&text=⚡%20Energy%20Price%20Forecaster&fontSize=38&fontColor=ffffff&fontAlignY=38&desc=XGBoost%20%2B%20LSTM%20%7C%20Day-Ahead%20Electricity%20Market%20Intelligence&descAlignY=60&descSize=16" width="100%"/>
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![XGBoost](https://img.shields.io/badge/XGBoost-2.0%2B-189AB4?style=flat-square)](https://xgboost.readthedocs.io/)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00?style=flat-square&logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.x-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
-[![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?style=flat-square&logo=plotly&logoColor=white)](https://plotly.com/)
-[![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?style=flat-square&logo=jupyter&logoColor=white)](https://jupyter.org/)
-[![License](https://img.shields.io/badge/License-MIT-22C55E?style=flat-square)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)]()
+[![🚀 Live Demo](https://img.shields.io/badge/Live_Demo-Try_it_now-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://aimlds7-xgboost-dayahead.streamlit.app)
+[![Open in GitHub](https://img.shields.io/badge/View_on-GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria)
 
-> **Dual-model time series forecasting engine for European day-ahead electricity markets.**  
-> Train XGBoost and LSTM in parallel, compare accuracy metrics, and export forecasts — all from a zero-config interactive Jupyter UI.
+<div align="center">
+
+**Built with:**
+
+[![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-189AB4?style=flat-square)](https://xgboost.readthedocs.io/)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-FF6F00?style=flat-square&logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![Plotly](https://img.shields.io/badge/Plotly-3F4F75?style=flat-square&logo=plotly&logoColor=white)](https://plotly.com/)
+[![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=flat-square&logo=jupyter&logoColor=white)](https://jupyter.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=flat-square)](LICENSE)
 
 </div>
+
+**Dual-model forecasting engine** — XGBoost (fast, interpretable) + LSTM (sequence-aware). Train in parallel, compare accuracy, export forecasts — all from a zero-config interactive UI.
+
+[🏗 Architecture](#-architecture) · [📊 Benchmarks](#-performance-benchmarks) · [🚀 Quick Start](#-quick-start)
+
+</div>
+
+
+
+<div align="center">
+
+[![Stars](https://img.shields.io/github/stars/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria?style=social)](https://github.com/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria/stargazers)
+[![Forks](https://img.shields.io/github/forks/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria?style=social)](https://github.com/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria/network/members)
+[![Last commit](https://img.shields.io/github/last-commit/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria)](https://github.com/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria/commits)
+
+</div>
+
 
 ---
 
@@ -405,7 +425,13 @@ One full week of hourly data (7 × 24 = 168 timesteps) ensures the LSTM can capt
 ├── 📄 README.md
 └── 📄 LICENSE
 ```
+<div align="center">
 
+🔭 **Currently:** SHAP feature importance · Quantile regression for prediction intervals · ONNX export
+
+💬 **Open to:** Energy ML / Quant roles across EU · collaboration on BESS analytics
+
+</div>
 ---
 
 ## 🤝 Contributing
