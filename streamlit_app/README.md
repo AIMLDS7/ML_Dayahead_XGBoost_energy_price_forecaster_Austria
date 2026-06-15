@@ -1,7 +1,7 @@
 # ⚡ Austrian Day-Ahead Forecaster — Live Demo
 
 Interactive Streamlit demo for the model in
-[`AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria`](https://github.com/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria).
+[`AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria`]([https://github.com/AIMLDS7/ML_Dayahead_XGBoost_energy_price_forecaster_Austria](https://aimlds7-xgboost-dayahead.streamlit.app/)).
 
 **What it does:** Forecasts Austrian day-ahead electricity prices 1/3/7/14 days ahead
 using gradient-boosted regression with rolling lag features and quantile
