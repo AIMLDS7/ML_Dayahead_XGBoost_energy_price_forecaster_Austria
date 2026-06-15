@@ -103,7 +103,7 @@ def train_models(df_feat: pd.DataFrame, confidence: float):
         "test_idx": df_feat["timestamp"].iloc[split:].reset_index(drop=True),
         "y_test": y_test.reset_index(drop=True),
         "y_pred": pd.Series(y_pred, name="forecast"),
-        "feat_importance": pd.Series(model_med.feature_importances_, index=FEATURES).sort_values(ascending=False),
+        "feat_importance": pd.Series(model_med.feature_importances_, index=FEATURES, name="importance").sort_values(ascending=False),
     }
 
 
@@ -276,7 +276,7 @@ with col_b:
     st.markdown("### 🔬 Feature importance")
     fig3 = px.bar(
         bundle["feat_importance"].reset_index(),
-        x="price", y="index", orientation="h",
+        x="importance", y="index", orientation="h",
         color_discrete_sequence=["#f0b429"],
     )
     fig3.update_layout(
